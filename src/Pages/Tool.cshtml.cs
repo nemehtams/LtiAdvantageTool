@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AdvantageTool.Data;
 using AdvantageTool.Utility;
@@ -97,7 +98,6 @@ namespace AdvantageTool.Pages
 
             var jwt = handler.ReadJwtToken(idToken);
             JwtHeader = jwt.Header;
-
             var messageType = jwt.Claims.SingleOrDefault(c => c.Type == Constants.LtiClaims.MessageType)?.Value;
             if (messageType.IsMissing())
             {
@@ -162,6 +162,10 @@ namespace AdvantageTool.Pages
                 var keySetJson = await httpClient.GetStringAsync(platform.JwkSetUrl);
                 var keySet = JsonConvert.DeserializeObject<JsonWebKeySet>(keySetJson);
                 var key = keySet.Keys.SingleOrDefault(k => k.Kid == jwt.Header.Kid);
+                if(key == null)
+                {
+                    key = keySet.Keys.SingleOrDefault(k => k.Kid == ((DateTime)jwt.Header["kid"]).ToString("yyyy-MM-ddTHH:mm:ssZ"));
+                }
                 if (key == null)
                 {
                     Error = "No matching key found.";
